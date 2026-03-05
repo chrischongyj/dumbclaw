@@ -1,0 +1,33 @@
+# DumbClaw Configuration
+# Copy this file to config.yaml and fill in your values.
+
+llm:
+  provider: "openai"        # openai | anthropic | ollama
+  model: "gpt-4"
+  api_key: "your-api-key"
+  api_base: ""              # optional: custom endpoint (e.g. https://api.poe.com/v1)
+  temperature: 0.7
+  max_tokens: 2000
+
+messaging:
+  whatsapp:
+    enabled: false
+    phone_number: "+1234567890"
+    session_dir: "./whatsapp_session"
+  telegram:
+    enabled: false
+    bot_token: "your-telegram-bot-token"
+    allowed_users: []       # empty = allow everyone
+
+skills:
+  enabled:
+    - web_search
+    - file_operations
+    - weather
+  web_search:
+    max_results: 5
+  file_operations:
+    allowed_dirs: []        # empty = allow all directories
+
+general:
+  debug: false

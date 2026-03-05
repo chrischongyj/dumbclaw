@@ -1,0 +1,22 @@
+# Binary
+dumbclaw
+dumbclaw.exe
+
+# Config (contains secrets)
+config.yaml
+
+# Runtime data
+whatsapp_session/
+workspace/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
