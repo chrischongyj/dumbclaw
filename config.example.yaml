@@ -24,6 +24,9 @@ skills:
     - web_search
     - file_operations
     - weather
+    - schedule
+    - browse
+    - rss
   web_search:
     max_results: 5
   file_operations:
