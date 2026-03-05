@@ -1,5 +1,7 @@
 # DumbClaw
 
+<img src="https://i.imgur.com/9fGIKLk.jpeg" alt="A red flower" width="400" height="400">
+
 DumbClaw is a deliberately simple AI assistant bot — the "dumb" version of [OpenClaw](https://github.com/OpenClaw). No framework magic, no abstractions for the sake of it. Every feature lives in one readable file. If you want to add something new, you should be able to vibe-code it in minutes.
 
 ## Features
