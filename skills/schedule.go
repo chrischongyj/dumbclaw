@@ -1,8 +1,10 @@
 package skills
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +26,12 @@ func SetSchedulerCallbacks(push func(string), process func(string) string) {
 	schedulerProcess = process
 }
 
+// SetScheduleFile sets the path for persisting scheduled jobs across restarts.
+// Call this once at startup before any jobs are added.
+func SetScheduleFile(path string) {
+	store.setFile(path)
+}
+
 type job struct {
 	ID       int
 	Task     string
@@ -32,23 +40,60 @@ type job struct {
 }
 
 type scheduleStore struct {
-	mu   sync.Mutex
-	jobs []*job
-	next int
+	mu       sync.Mutex
+	jobs     []*job
+	next     int
+	filePath string
+}
+
+func (s *scheduleStore) setFile(path string) {
+	s.mu.Lock()
+	s.filePath = path
+	data, err := os.ReadFile(path)
+	if err == nil {
+		var jobs []*job
+		if err := json.Unmarshal(data, &jobs); err != nil {
+			log.Printf("Schedule: failed to load jobs from %s: %v", path, err)
+		} else {
+			s.jobs = jobs
+			for _, j := range jobs {
+				if j.ID > s.next {
+					s.next = j.ID
+				}
+			}
+			log.Printf("Schedule: loaded %d job(s) from %s", len(jobs), path)
+		}
+	}
+	s.mu.Unlock()
+}
+
+func (s *scheduleStore) save() {
+	s.mu.Lock()
+	path := s.filePath
+	data, err := json.Marshal(s.jobs)
+	s.mu.Unlock()
+	if path == "" || err != nil {
+		return
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		log.Printf("Schedule: failed to save jobs to %s: %v", path, err)
+	}
 }
 
 func (s *scheduleStore) add(task string, interval time.Duration) int {
 	log.Printf("Scheduling new job: %q every %s", task, interval)
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.next++
+	id := s.next
 	s.jobs = append(s.jobs, &job{
-		ID:       s.next,
+		ID:       id,
 		Task:     task,
 		Interval: interval,
 		NextRun:  time.Now().Add(interval),
 	})
-	return s.next
+	s.mu.Unlock()
+	s.save()
+	return id
 }
 
 func (s *scheduleStore) list() []*job {
@@ -61,14 +106,19 @@ func (s *scheduleStore) list() []*job {
 
 func (s *scheduleStore) remove(id int) bool {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	found := false
 	for i, j := range s.jobs {
 		if j.ID == id {
 			s.jobs = append(s.jobs[:i], s.jobs[i+1:]...)
-			return true
+			found = true
+			break
 		}
 	}
-	return false
+	s.mu.Unlock()
+	if found {
+		s.save()
+	}
+	return found
 }
 
 func (s *scheduleStore) run() {
