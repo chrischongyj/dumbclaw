@@ -55,6 +55,7 @@ func (t *TelegramBot) handleUpdate(update tgbotapi.Update) {
 			}
 		}
 		if !allowed {
+			log.Printf("Telegram: unauthorized user %d (@%s)", msg.From.ID, msg.From.UserName)
 			t.reply(msg, "Sorry, you're not authorized to use this bot.")
 			return
 		}
@@ -62,15 +63,21 @@ func (t *TelegramBot) handleUpdate(update tgbotapi.Update) {
 
 	switch msg.Command() {
 	case "start":
+		log.Printf("Telegram [%d/@%s]: /start", msg.From.ID, msg.From.UserName)
 		t.reply(msg, "Hello! I'm DumbClaw, your AI assistant.\nSend me a message to get started.\n\n/help — show commands")
 	case "help":
+		log.Printf("Telegram [%d/@%s]: /help", msg.From.ID, msg.From.UserName)
 		t.reply(msg, "/start — start\n/help — this message\n/reset — reset conversation\n\nJust send a message to chat!")
 	case "reset":
+		log.Printf("Telegram [%d/@%s]: /reset", msg.From.ID, msg.From.UserName)
 		t.reset()
 		t.reply(msg, "Conversation reset.")
 	default:
 		if msg.Text != "" {
-			t.reply(msg, t.handler(msg.Text))
+			log.Printf("Telegram [%d/@%s]: %s", msg.From.ID, msg.From.UserName, msg.Text)
+			response := t.handler(msg.Text)
+			log.Printf("Telegram replying to %d/@%s: %s", msg.From.ID, msg.From.UserName, response)
+			t.reply(msg, response)
 		}
 	}
 }
