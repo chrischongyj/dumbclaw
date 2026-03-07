@@ -57,8 +57,10 @@ type FileOpsSkillConfig struct {
 }
 
 type GeneralConfig struct {
-	Debug   bool   `yaml:"debug"`
-	LogFile string `yaml:"log_file"`
+	Debug       bool   `yaml:"debug"`
+	LogFile     string `yaml:"log_file"`
+	HistoryFile string `yaml:"history_file"`
+	MaxHistory  int    `yaml:"max_history"`
 }
 
 func Load(path string) (*Config, error) {
@@ -74,6 +76,8 @@ func Load(path string) (*Config, error) {
 	cfg.LLM.MaxTokens = 2000
 	cfg.Skills.WebSearch.Engine = "duckduckgo"
 	cfg.Skills.WebSearch.MaxResults = 5
+	cfg.General.HistoryFile = "history.json"
+	cfg.General.MaxHistory = 20
 
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("invalid config YAML: %w", err)

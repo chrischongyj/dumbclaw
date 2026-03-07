@@ -34,3 +34,5 @@ skills:
 
 general:
   debug: false
+  history_file: "history.json"  # file to persist conversation history across restarts
+  max_history: 20               # max messages kept in LLM context (oldest dropped first)

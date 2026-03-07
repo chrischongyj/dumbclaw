@@ -3,6 +3,8 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	"dumbclaw/llm"
@@ -11,9 +13,11 @@ import (
 
 // Agent coordinates the LLM and skills to respond to messages.
 type Agent struct {
-	llm     *llm.LLM
-	skills  map[string]skills.Skill
-	history []llm.Message
+	llm         *llm.LLM
+	skills      map[string]skills.Skill
+	history     []llm.Message
+	historyFile string
+	maxHistory  int
 }
 
 func New(l *llm.LLM, skillList []skills.Skill) *Agent {
@@ -22,6 +26,43 @@ func New(l *llm.LLM, skillList []skills.Skill) *Agent {
 		skillMap[s.Name()] = s
 	}
 	return &Agent{llm: l, skills: skillMap}
+}
+
+// SetPersistence enables saving/restoring conversation history across restarts.
+// maxHistory is the maximum number of messages kept in context (oldest are dropped).
+func (a *Agent) SetPersistence(file string, maxHistory int) {
+	a.historyFile = file
+	a.maxHistory = maxHistory
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return
+	}
+	var history []llm.Message
+	if err := json.Unmarshal(data, &history); err != nil {
+		log.Printf("Agent: failed to load history from %s: %v", file, err)
+		return
+	}
+	a.history = history
+	log.Printf("Agent: importing %d message(s) from %s", len(history), file)
+}
+
+func (a *Agent) saveHistory() {
+	if a.historyFile == "" {
+		return
+	}
+	data, err := json.Marshal(a.history)
+	if err != nil {
+		return
+	}
+	if err := os.WriteFile(a.historyFile, data, 0644); err != nil {
+		log.Printf("Agent: failed to save history: %v", err)
+	}
+}
+
+func (a *Agent) trimHistory() {
+	if a.maxHistory > 0 && len(a.history) > a.maxHistory {
+		a.history = a.history[len(a.history)-a.maxHistory:]
+	}
 }
 
 func (a *Agent) systemPrompt() string {
@@ -65,10 +106,14 @@ func (a *Agent) ProcessMessage(text string) string {
 		}
 
 		a.history = append(a.history, llm.Message{Role: "assistant", Content: finalResponse})
+		a.trimHistory()
+		a.saveHistory()
 		return finalResponse
 	}
 
 	a.history = append(a.history, llm.Message{Role: "assistant", Content: response})
+	a.trimHistory()
+	a.saveHistory()
 	return response
 }
 
@@ -122,6 +167,7 @@ func extractJSON(s string) string {
 // Reset clears the conversation history.
 func (a *Agent) Reset() {
 	a.history = nil
+	a.saveHistory()
 }
 
 // SkillNames returns the names of all loaded skills.

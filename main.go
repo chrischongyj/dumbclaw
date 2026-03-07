@@ -72,6 +72,8 @@ func main() {
 
 	skillList := skills.Load(cfg)
 	a := agent.New(llm.New(cfg.LLM), skillList)
+	a.SetPersistence(cfg.General.HistoryFile, cfg.General.MaxHistory)
+	skills.SetScheduleFile("schedule.json")
 
 	log.Printf("LLM: %s / %s | Skills: %d", cfg.LLM.Provider, cfg.LLM.Model, len(skillList))
 
