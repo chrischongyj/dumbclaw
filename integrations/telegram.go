@@ -75,6 +75,7 @@ func (t *TelegramBot) handleUpdate(update tgbotapi.Update) {
 	default:
 		if msg.Text != "" {
 			log.Printf("Telegram [%d/@%s]: %s", msg.From.ID, msg.From.UserName, msg.Text)
+			t.bot.Send(tgbotapi.NewChatAction(msg.Chat.ID, tgbotapi.ChatTyping))
 			response := t.handler(msg.Text)
 			log.Printf("Telegram replying to %d/@%s: %s", msg.From.ID, msg.From.UserName, response)
 			t.reply(msg, response)
